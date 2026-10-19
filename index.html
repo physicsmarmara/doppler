@@ -533,7 +533,7 @@ const worldH = () => (c1.w ? c1.h / (c1.w / W1) : 675);
 function reset1() {
   sim.waves = []; sim.tr = 0; sim.nextEmit = 0; sim.booms = [];
   const H = worldH();
-  if (!sim.layout) sim.layout = { s: { x: (sim.vs >= 0 ? 0.26 : 0.74) * W1, y: 0 }, o: [{ x: 0.93 * W1, y: 0, vx: sim.vo, vy: 0, dx: 1, dy: 0 }, { x: 0.07 * W1, y: 0, vx: sim.vo, vy: 0, dx: 1, dy: 0 }, { x: 0.58 * W1, y: 0.3 * H, vx: 0, vy: 0, dx: 1, dy: 0 }] };
+  if (!sim.layout) sim.layout = { s: { x: (sim.vs >= 0 ? 0.15 : 0.85) * W1, y: 0 }, o: [{ x: 0.93 * W1, y: 0, vx: sim.vo, vy: 0, dx: 1, dy: 0 }, { x: 0.07 * W1, y: 0, vx: sim.vo, vy: 0, dx: 1, dy: 0 }, { x: 0.58 * W1, y: 0.3 * H, vx: 0, vy: 0, dx: 1, dy: 0 }] };
   const L = sim.layout;
   if (!sim.custom) L.o[2].y = 0.3 * H;
   sim.xs = L.s.x; sim.ys = L.s.y; sim.startX = L.s.x;
@@ -557,6 +557,7 @@ function applyVo(v) {
   setVel(0, v, 0); setVel(1, v, 0);
   [0, 1].forEach((i) => { sim.obs[i].dx = v < 0 ? -1 : 1; sim.obs[i].dy = 0; sim.layout.o[i].dx = v < 0 ? -1 : 1; sim.layout.o[i].dy = 0; });
 }
+const heard = (o) => o.hits > 0 && sim.gt - o.lastGt < Math.max(1.5, 3 / sim.f0);
 function theory(o) {
   const v = vSound(), dx = o.x - sim.xs, dy = o.y - sim.ys, R = Math.hypot(dx, dy) || 1, nx = dx / R, ny = dy / R;
   const vsT = sim.vs * nx, vrT = -(o.vx * nx + o.vy * ny);
@@ -601,7 +602,7 @@ function step1(dt) {
   });
   sim.booms.forEach((b) => { b.f -= dt * 0.9; }); sim.booms = sim.booms.filter((b) => b.f > 0);
   const Hw = worldH();
-  const out = (sim.vs !== 0 && (Math.abs(sim.xs - sim.startX) > 0.62 * W1 || sim.xs > 0.98 * W1 || sim.xs < 0.02 * W1)) || sim.obs.some((o) => o.x < 0.01 * W1 || o.x > 0.99 * W1 || (o.vy !== 0 && (o.y < -Hw * 0.44 || o.y > Hw * 0.56)));
+  const out = (sim.vs !== 0 && (sim.xs > 0.99 * W1 || sim.xs < 0.01 * W1)) || sim.obs.some((o) => o.x < 0.01 * W1 || o.x > 0.99 * W1 || (o.vy !== 0 && (o.y < -Hw * 0.44 || o.y > Hw * 0.56)));
   if (out) reset1();
 }
 function stepN(dt) { const n = Math.max(1, Math.ceil(dt / 0.01)); for (let i = 0; i < n; i++) step1(dt / n); }
@@ -678,8 +679,7 @@ function draw1() {
     ctx.fillStyle = c; ctx.beginPath(); ctx.arc(x, y, 7, 0, TAU); ctx.fill();
     ctx.fillStyle = pal.stage; ctx.font = font(10, 700); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(o.id, x, y + 0.5);
     if (sim.listen === o.id) { ctx.strokeStyle = c; ctx.lineWidth = 2.5; ctx.setLineDash([]); ctx.beginPath(); ctx.arc(x, y, 14, 0, TAU); ctx.stroke(); label(ctx, '♪ listening', x, y + 32 * (fs / 13), w, c, fs * 0.85, 'center', 600); }
-    let f = o.fm; if (f === null && o.th && o.th.f) f = o.th.f;
-    const txt = o.id === 'C' ? (o.fm ? `${fmt(o.fm)} Hz` : '–') : (o.th && o.th.f === null ? 'no signal' : `${fmt(f || 0)} Hz`);
+    const txt = !heard(o) ? (o.th && o.th.f === null ? 'no signal' : '–') : `${fmt(o.fm || (o.th && o.th.f) || 0)} Hz`;
     label(ctx, txt, x, y - 24 * (fs / 13), w, c, fs * 1.15, 'center', 700);
   });
   // kaynak
@@ -755,6 +755,7 @@ function readouts1() {
     const o = sim.obs[i], el = $('#r' + id + '-m'), tt = $('#r' + id + '-t');
     if (!o.th) return;
     if (o.th.f === null) { el.innerHTML = '<small>not heard</small>'; tt.textContent = 'the wave cannot reach the observer'; return; }
+    if (!heard(o)) { el.innerHTML = '<small>waiting for the wave</small>'; tt.textContent = `formula ${fmt(o.th.f)} Hz · the wave has not arrived yet`; return; }
     const val = o.fm || (o.th && o.th.f) || sim.f0;
     el.innerHTML = `${fmt(val)} <small>Hz</small>${tagOf(val / sim.f0)}`;
     tt.textContent = `formula ${fmt(o.th.f)} Hz · ratio ${fmt(o.th.f / sim.f0)}`;
@@ -777,8 +778,8 @@ function audio1() {
   if (active !== 't1' || sim.listen === 'off') { if (active !== 't2') setTone(440, 0); return; }
   if (sim.sound === 'tick') { setTone(440, 0); return; }
   const o = sim.obs.find((q) => q.id === sim.listen);
-  const r = o.id === 'C' ? (o.fm ? o.fm / sim.f0 : (o.th && o.th.f ? o.th.f / sim.f0 : null)) : (o.th && o.th.f ? o.th.f / sim.f0 : null);
-  if (!r || !sim.playing || sim.drag) { setTone(440, 0); return; }
+  const r = o.fm ? o.fm / sim.f0 : (o.th && o.th.f ? o.th.f / sim.f0 : null);
+  if (!heard(o) || !r || !sim.playing || sim.drag) { setTone(440, 0); return; }
   const wail = sim.sound === 'siren' ? (Math.floor(performance.now() / 650) % 2 ? 1.335 : 1) : 1;
   setTone(440 * r * wail, 0.12, clamp((o.x - sim.xs) / 400, -1, 1));
 }
