@@ -488,6 +488,15 @@ function ring(ctx, x, y, r, dirSign, m, alpha, lw) {
     g.addColorStop(0, rgba(cF, alpha)); g.addColorStop(0.25, rgba(pal.neu, alpha));
     g.addColorStop(0.5, rgba(cB, alpha)); g.addColorStop(0.75, rgba(pal.neu, alpha)); g.addColorStop(1, rgba(cF, alpha));
     stroke = g;
+  } else if (m > 0.02) {
+    // eski tarayıcılar: conic gradient yoksa halkayı kısa yaylara bölüp renklendir
+    const N = 56; ctx.lineWidth = lw;
+    for (let i = 0; i < N; i++) {
+      const a0 = i * TAU / N, a1 = (i + 1) * TAU / N, t = clamp(Math.cos((a0 + a1) / 2) * dirSign, -1, 1);
+      ctx.strokeStyle = rgba(t >= 0 ? mix(pal.neu, pal.blue, m * t) : mix(pal.neu, pal.hot, -m * t), alpha);
+      ctx.beginPath(); ctx.arc(x, y, r, a0, a1 + 0.03); ctx.stroke();
+    }
+    return;
   }
   ctx.strokeStyle = stroke; ctx.lineWidth = lw;
   ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.stroke();
@@ -625,10 +634,10 @@ function draw1() {
     ctx.beginPath(); ctx.moveTo(X(ex), Y(ys - ey)); ctx.lineTo(X(sim.xs), Y(ys)); ctx.lineTo(X(ex), Y(ys + ey)); ctx.stroke(); ctx.setLineDash([]);
   }
   // halkalar
-  const m = sim.flags.color ? clamp(mAbs * 1.5, 0, 1) : 0;
+  const m = sim.flags.color && mAbs > 0.01 ? clamp(0.55 + mAbs, 0, 1) : 0;
   for (const wv of sim.waves) {
     const a = clamp(0.95 * Math.pow(Math.max(0, 1 - wv.r / 1800), 1.3), 0.05, 0.95);
-    ring(ctx, X(wv.x), Y(wv.y), wv.r * s, Math.sign(sim.vs) || 1, m, a, clamp(w / 520, 1.4, 3));
+    ring(ctx, X(wv.x), Y(wv.y), wv.r * s, Math.sign(sim.vs) || 1, m, a, clamp(w / 380, 1.8, 3.4));
   }
   // yayılma merkezleri
   if (sim.flags.centers) {
@@ -888,7 +897,7 @@ function draw2() {
   const tAbs = p2.t, teNow = Math.min(tAbs, te1);
   ctx.save(); ctx.beginPath(); ctx.rect(0, 0, w, h); ctx.clip();
   // halkalar
-  const dtRing = 0.08, m = clamp(vs / v * 1.5, 0, 1);
+  const dtRing = 0.08, m = vs / v > 0.01 ? clamp(0.55 + vs / v, 0, 1) : 0;
   for (let k = 0; k * dtRing <= teNow; k++) {
     const te = k * dtRing, r = v * (tAbs - te);
     if (r > 460) continue;
