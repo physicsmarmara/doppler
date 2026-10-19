@@ -1,17 +1,26 @@
 <!doctype html>
-<html lang="tr">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<title>Doppler Laboratuvarı</title>
+<title>Doppler Lab</title>
+<meta name="author" content="Mehtap Aydoğan">
+<meta name="description" content="Interactive Doppler effect lab: wavefronts, the Mach cone, a passing vehicle and the redshift of light, with live measurements.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Doppler Lab">
+<meta property="og:description" content="Interactive Doppler effect lab: wavefronts, the Mach cone, a passing vehicle and the redshift of light, with live measurements.">
+<meta property="og:locale" content="en_US">
+<link rel="alternate" hreflang="en" href="./">
+<link rel="alternate" hreflang="tr" href="tr.html">
+
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <style>
-/* Düzen: solda sahne (tuval + alıcı kaydı + ölçümler), sağda kontroller; dar ekranda tek sütun.
-   Renk dili: mavi = sıkışma / yüksek frekans, kırmızı = gerilme / düşük frekans. */
+/* Layout: stage on the left (canvas + receiver record + readouts), controls on the right; one column on narrow screens.
+   Color language: blue = compression / high frequency, red = stretching / low frequency. */
 :root{
   --bg:#eef2f8; --panel:#ffffff; --panel2:#f3f6fb; --line:#d2dbe9;
   --fg:#0f1b30; --muted:#566785; --stage:#f8fbff; --grid:rgba(15,27,48,.07);
@@ -37,13 +46,13 @@
 *{box-sizing:border-box}
 html{background:var(--bg)}
 body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.55}
-.app{max-width:1280px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.app{max-width:1280px;margin:0 auto;padding-block:14px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 h1,h2,h3{font-family:var(--display);text-wrap:balance;line-height:1.1;margin:0}
-.top{display:flex;gap:16px;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;margin-bottom:18px}
+.top{display:flex;gap:16px;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;margin-bottom:12px}
 .kicker{margin:0 0 6px;font:600 12px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
-h1{font-size:clamp(34px,5vw,56px);font-weight:800;letter-spacing:-.02em}
+h1{font-size:clamp(30px,3.8vw,44px);font-weight:800;letter-spacing:-.02em}
 h1 em{font-style:normal;background:linear-gradient(90deg,var(--accent),var(--hot));-webkit-background-clip:text;background-clip:text;color:transparent}
-.lead{margin:10px 0 0;max-width:62ch;color:var(--muted)}
+.lead{margin:8px 0 0;max-width:78ch;color:var(--muted);font-size:14px;line-height:1.5}
 button{font:inherit;color:inherit;cursor:pointer}
 button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .btn{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 14px;font-weight:500}
@@ -51,7 +60,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
 :root[data-theme="dark"] .btn.primary{color:#04101f}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .btn.primary{color:#04101f}}
-.tabs{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--line);margin-bottom:18px}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--line);margin-bottom:14px}
 .tabs button{background:none;border:0;border-bottom:3px solid transparent;padding:10px 16px;font:600 15px var(--display);color:var(--muted);margin-bottom:-1px}
 .tabs button[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--accent)}
 .tab[hidden]{display:none}
@@ -59,10 +68,20 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 @media (max-width:1000px){.lab{grid-template-columns:minmax(0,1fr)}}
 .stage{display:flex;flex-direction:column;gap:12px;min-width:0}
 canvas{display:block;width:100%;border-radius:12px;background:var(--stage);border:1px solid var(--line)}
-#c1,#c2,#c3{aspect-ratio:16/9}
-#s1{height:128px}
-#g2{aspect-ratio:16/6}
-@media (max-width:640px){#c1,#c2,#c3{aspect-ratio:4/3}#g2{aspect-ratio:4/3}}
+/* Tuval yüksekliği, alttaki sabit kontrol çubuğuyla birlikte tek ekrana sığacak şekilde ayarlanır */
+#c1,#c3{height:clamp(260px,calc(100vh - 450px),560px)}
+#c2{height:clamp(200px,calc((100vh - 450px) * .58),380px)}
+#g2{height:clamp(150px,calc((100vh - 450px) * .42),300px)}
+#s1{height:112px}
+@media (max-width:700px){#c1,#c2,#c3,#g2{height:auto;aspect-ratio:4/3}}
+.dock{position:sticky;bottom:10px;z-index:6;display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:8px 22px;align-items:end;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 16px 14px;box-shadow:0 10px 34px rgba(0,0,0,.28)}
+.dock .dock-btns{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.dock .btn{padding:6px 12px}
+.dock .ctl{margin:0;min-width:0}
+.dock .ctl-h{font-size:13px;margin-bottom:2px}
+.dock-l{font:600 12px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:6px}
+.dock select{padding:6px 10px}
+@media (max-width:700px){.dock{position:static}}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
 .side{display:flex;flex-direction:column;gap:14px;min-width:0}
 .side h3{font-size:13px;font:600 12px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
@@ -121,6 +140,16 @@ th{font:600 12px var(--mono);letter-spacing:.08em;text-transform:uppercase;color
 .myth p{margin:2px 0 0;color:var(--muted);font-size:14px}
 footer{margin-top:40px;color:var(--muted);font-size:13px}
 @media (prefers-reduced-motion:reduce){.meter b{transition:none}}
+
+.top-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.langsw{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;font:600 12px var(--mono);letter-spacing:.06em}
+.langsw a,.langsw span{padding:9px 12px;line-height:1}
+.langsw span{background:var(--panel2);color:var(--fg)}
+.langsw a{color:var(--muted);text-decoration:none;background:var(--panel)}
+.langsw a:hover{color:var(--fg)}
+.credit{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);display:flex;gap:12px;align-items:baseline;justify-content:center;flex-wrap:wrap;text-align:center}
+.credit span{font:500 11px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.credit b{font:600 18px var(--display);letter-spacing:-.01em;color:var(--fg)}
 </style>
 </head>
 <body>
@@ -129,78 +158,78 @@ footer{margin-top:40px;color:var(--muted);font-size:13px}
 <div class="app" id="app">
   <header class="top">
     <div>
-      <p class="kicker">Fizik · Dalgalar ve Ses</p>
-      <h1>Doppler <em>Etkisi</em></h1>
-      <p class="lead">Kaynak ya da gözlemci hareket ettiğinde duyulan frekans değişir. Bu laboratuvarda dalga cephelerini, Mach konisini, geçen bir aracın sesini ve ışığın kırmızıya kaymasını aynı sayfada canlı ölçümlerle gösterebilirsiniz.</p>
+      <p class="kicker">Physics · Waves &amp; Sound</p>
+      <h1>Doppler <em>Effect</em></h1>
+      <p class="lead">The frequency you hear changes when the source or the observer moves. In this lab you can show wavefronts, the Mach cone, the sound of a passing vehicle and the redshift of light on one page, with live measurements.</p>
     </div>
-    <div class="row">
-      <button class="btn" id="fs" type="button">Tam ekran</button>
+    <div class="top-actions">
+      <div class="langsw" role="group" aria-label="Language"><span aria-current="true">EN</span><a href="tr.html" hreflang="tr" lang="tr">TR</a></div>
+      <button class="btn" id="fs" type="button">Full screen</button>
     </div>
   </header>
 
-  <nav class="tabs" role="tablist" aria-label="Simülasyonlar">
-    <button role="tab" id="tb-t1" aria-selected="true" aria-controls="t1" data-tab="t1" type="button">1 · Dalga cepheleri</button>
-    <button role="tab" id="tb-t2" aria-selected="false" aria-controls="t2" data-tab="t2" type="button">2 · Geçen araç (ses)</button>
-    <button role="tab" id="tb-t3" aria-selected="false" aria-controls="t3" data-tab="t3" type="button">3 · Işık ve renk</button>
+  <nav class="tabs" role="tablist" aria-label="Simulations">
+    <button role="tab" id="tb-t1" aria-selected="true" aria-controls="t1" data-tab="t1" type="button">1 · Wavefronts</button>
+    <button role="tab" id="tb-t2" aria-selected="false" aria-controls="t2" data-tab="t2" type="button">2 · Passing vehicle (sound)</button>
+    <button role="tab" id="tb-t3" aria-selected="false" aria-controls="t3" data-tab="t3" type="button">3 · Light and color</button>
   </nav>
 
   <!-- ===== SEKME 1 ===== -->
   <section class="tab" id="t1" role="tabpanel" aria-labelledby="tb-t1">
     <div class="lab">
       <div class="stage">
-        <canvas id="c1" aria-label="Hareketli kaynağın ürettiği dalga cepheleri"></canvas>
-        <canvas id="s1" aria-label="Gözlemcilere ulaşan dalga tepelerinin zaman kaydı"></canvas>
-        <p class="note">Kayıt şeridi: her çizgi o gözlemciye bir dalga tepesinin ulaştığı andır. Çizgiler sıklaştıkça frekans yükselir. Görselleştirme için f₀ yavaş tutuldu (Hz cinsinden birkaç dalga/saniye); frekans oranları gerçek bir ses için de aynıdır.</p>
+        <canvas id="c1" aria-label="Wavefronts produced by a moving source"></canvas>
+        <canvas id="s1" aria-label="Time record of wave crests reaching the observers"></canvas>
+        <p class="note">Record strip: each tick marks the moment a wave crest reaches that observer. The denser the ticks, the higher the frequency. To keep it visible, f₀ is kept low (a few waves per second); the frequency ratios are the same for real sound.</p>
         <div class="cards">
-          <div class="card"><h4>Kaynak <i style="background:var(--fg)"></i></h4><div class="big" id="r-f0">–</div><div class="sub" id="r-lam">λ₀ –</div><div class="sub" id="r-mach">Mach –</div></div>
-          <div class="card"><h4>A · sağdaki <i style="background:var(--green)"></i></h4><div class="big" id="rA-m">–</div><div class="sub" id="rA-t">formül –</div><div class="meter"><b id="rA-b" style="left:50%"></b></div></div>
-          <div class="card"><h4>B · soldaki <i style="background:var(--amber)"></i></h4><div class="big" id="rB-m">–</div><div class="sub" id="rB-t">formül –</div><div class="meter"><b id="rB-b" style="left:50%"></b></div></div>
-          <div class="card"><h4>C · yoldan geçen <i style="background:var(--violet)"></i></h4><div class="big" id="rC-m">–</div><div class="sub" id="rC-t">yalnızca ölçüm</div><div class="meter"><b id="rC-b" style="left:50%"></b></div></div>
+          <div class="card"><h4>Source <i style="background:var(--fg)"></i></h4><div class="big" id="r-f0">–</div><div class="sub" id="r-lam">λ₀ –</div><div class="sub" id="r-mach">Mach –</div></div>
+          <div class="card"><h4>A · on the right <i style="background:var(--green)"></i></h4><div class="big" id="rA-m">–</div><div class="sub" id="rA-t">formula –</div><div class="meter"><b id="rA-b" style="left:50%"></b></div></div>
+          <div class="card"><h4>B · on the left <i style="background:var(--amber)"></i></h4><div class="big" id="rB-m">–</div><div class="sub" id="rB-t">formula –</div><div class="meter"><b id="rB-b" style="left:50%"></b></div></div>
+          <div class="card"><h4>C · beside the path <i style="background:var(--violet)"></i></h4><div class="big" id="rC-m">–</div><div class="sub" id="rC-t">measurement only</div><div class="meter"><b id="rC-b" style="left:50%"></b></div></div>
         </div>
         <pre class="eq" id="eq1"></pre>
+        <div class="dock">
+          <div class="dock-btns">
+            <button class="btn primary" id="play1" type="button">Pause</button>
+            <button class="btn" id="step1" type="button">Step</button>
+            <button class="btn" id="reset1" type="button">Restart</button>
+            <button class="btn" id="layout1" type="button">Reset layout</button>
+          </div>
+          <label class="ctl"><span class="ctl-h"><span>Time scale</span><output id="o-ts"></output></span><input type="range" id="ts" min="0.1" max="2" step="0.1" value="1"></label>
+          <label class="ctl"><span class="ctl-h"><span>Source frequency <small>f₀</small></span><output id="o-f0"></output></span><input type="range" id="f0" min="0.5" max="5" step="0.1" value="2"></label>
+          <label class="ctl"><span class="ctl-h"><span>Source speed <small>v<sub>s</sub> (+ to the right)</small></span><output id="o-vs"></output></span><input type="range" id="vs" min="-600" max="600" step="5" value="120"></label>
+          <label class="ctl"><span class="ctl-h"><span>Horizontal speed for A and B <small>v<sub>o</sub></small></span><output id="o-vo"></output></span><input type="range" id="vo" min="-200" max="200" step="5" value="0"></label>
+          <label class="ctl"><span class="ctl-h"><span>Air temperature</span><output id="o-tmp"></output></span><input type="range" id="tmp" min="-30" max="45" step="1" value="20"></label>
+          
+        </div>
       </div>
 
       <aside class="side">
         <div class="panel">
-          <h3>Çalıştır</h3>
-          <div class="row" style="margin-bottom:14px">
-            <button class="btn primary" id="play1" type="button">Duraklat</button>
-            <button class="btn" id="step1" type="button">Adım</button>
-            <button class="btn" id="reset1" type="button">Başa al</button>
-            <button class="btn" id="layout1" type="button">Yerleşimi sıfırla</button>
-          </div>
-          <label class="ctl"><span class="ctl-h"><span>Zaman hızı</span><output id="o-ts"></output></span><input type="range" id="ts" min="0.1" max="2" step="0.1" value="1"></label>
-          <h3 style="margin-top:4px">Hazır durumlar</h3>
+          <h3>Presets</h3>
           <div class="chips" id="presets1">
-            <button class="chip" type="button" data-vs="0" data-vo="0">Durgun</button>
-            <button class="chip" type="button" data-vs="100" data-vo="0">Yavaş kaynak</button>
-            <button class="chip" type="button" data-vs="0" data-vo="90">Koşan gözlemci</button>
-            <button class="chip" type="button" data-vs="120" data-vo="-60">İkisi birlikte</button>
-            <button class="chip" type="button" data-vs="310" data-vo="0">Mach 0,9</button>
+            <button class="chip" type="button" data-vs="0" data-vo="0">At rest</button>
+            <button class="chip" type="button" data-vs="100" data-vo="0">Slow source</button>
+            <button class="chip" type="button" data-vs="0" data-vo="90">Running observer</button>
+            <button class="chip" type="button" data-vs="120" data-vo="-60">Both moving</button>
+            <button class="chip" type="button" data-vs="310" data-vo="0">Mach 0.9</button>
             <button class="chip" type="button" data-vs="343" data-vo="0">Mach 1</button>
-            <button class="chip" type="button" data-vs="515" data-vo="0">Mach 1,5</button>
+            <button class="chip" type="button" data-vs="515" data-vo="0">Mach 1.5</button>
           </div>
         </div>
         <div class="panel">
-          <h3>Parametreler</h3>
-          <label class="ctl"><span class="ctl-h"><span>Kaynak frekansı <small>f₀</small></span><output id="o-f0"></output></span><input type="range" id="f0" min="0.5" max="5" step="0.1" value="2"></label>
-          <label class="ctl"><span class="ctl-h"><span>Kaynak hızı <small>v<sub>k</sub> (+ sağa)</small></span><output id="o-vs"></output></span><input type="range" id="vs" min="-600" max="600" step="5" value="120"></label>
-          <label class="ctl"><span class="ctl-h"><span>A ve B'ye yatay hız <small>v<sub>g</sub></small></span><output id="o-vo"></output></span><input type="range" id="vo" min="-200" max="200" step="5" value="0"></label>
-          <label class="ctl"><span class="ctl-h"><span>Hava sıcaklığı</span><output id="o-tmp"></output></span><input type="range" id="tmp" min="-30" max="45" step="1" value="20"></label>
-        </div>
-        <div class="panel">
-          <h3>Görünüm</h3>
-          <label class="sw"><input type="checkbox" id="tg-color" checked><span>Renk kodu (mavi sıkışma, kırmızı gerilme)</span></label>
-          <label class="sw"><input type="checkbox" id="tg-centers" checked><span>Yayılma merkezlerini göster</span></label>
-          <label class="sw"><input type="checkbox" id="tg-lambda" checked><span>Dalga boyunu ölç</span></label>
-          <label class="sw"><input type="checkbox" id="tg-cone" checked><span>Mach konisi (v<sub>k</sub> &gt; v)</span></label>
-          <label class="ctl" style="margin-top:12px"><span class="ctl-h"><span>Dinle</span></span>
-            <select id="listen"><option value="off">Kapalı</option><option value="A">Gözlemci A</option><option value="B">Gözlemci B</option><option value="C">Gözlemci C</option></select>
+          <h3>Display</h3>
+          <label class="sw"><input type="checkbox" id="tg-color" checked><span>Color code (blue compression, red stretching)</span></label>
+          <label class="sw"><input type="checkbox" id="tg-centers" checked><span>Show emission centers</span></label>
+          <label class="sw"><input type="checkbox" id="tg-lambda" checked><span>Measure the wavelength</span></label>
+          <label class="sw"><input type="checkbox" id="tg-cone" checked><span>Mach cone (v<sub>s</sub> &gt; v)</span></label>
+          <label class="ctl" style="margin-top:12px"><span class="ctl-h"><span>Listen</span></span>
+            <select id="listen"><option value="off">Off</option><option value="A">Observer A</option><option value="B">Observer B</option><option value="C">Observer C</option></select>
           </label>
-          <label class="ctl"><span class="ctl-h"><span>Ses türü</span></span>
-            <select id="sound1"><option value="tone">Sürekli ton</option><option value="siren">Siren (iki tonlu)</option><option value="tick">Tık (her dalga tepesinde)</option></select>
+          <label class="ctl"><span class="ctl-h"><span>Sound type</span></span>
+            <select id="sound1"><option value="tone">Continuous tone</option><option value="siren">Siren (two-tone)</option><option value="tick">Tick (on each wave crest)</option></select>
           </label>
-          <p class="note">Ses, 440 Hz'lik bir tonun duyulan orana göre kaydırılmasıdır. Yalnızca seçtiğiniz gözlemcinin duyduğu çalar (tonlar, tıklar ve sonik patlama dahil). Tuvalde gözlemciye tıklayarak da seçebilirsiniz; tekrar tıklayınca kapanır. Her gözlemcinin yanındaki ◆ tutamağını istediğiniz yöne sürükleyerek o gözlemcinin hız vektörünü verin; oku uzatmak hızı artırır. Boşluk tuşu duraklatır, <span class="kbd">R</span> başa alır.</p>
+          <p class="note">The sound is a 440 Hz tone shifted by the heard frequency ratio. Only what the selected observer hears is played (tones, ticks and the sonic boom included). You can also select an observer by clicking it on the canvas; click again to turn it off. Drag the ◆ handle next to each observer in any direction to give it a velocity vector; a longer arrow means a higher speed. <span class="kbd">Space</span> pauses, <span class="kbd">R</span> restarts.</p>
         </div>
       </aside>
     </div>
@@ -210,47 +239,45 @@ footer{margin-top:40px;color:var(--muted);font-size:13px}
   <section class="tab" id="t2" role="tabpanel" aria-labelledby="tb-t2" hidden>
     <div class="lab">
       <div class="stage">
-        <canvas id="c2" aria-label="Yoldan geçen aracın üstten görünümü"></canvas>
-        <canvas id="g2" aria-label="Duyulan frekansın zamanla değişimi"></canvas>
+        <canvas id="c2" aria-label="Top view of a vehicle passing along a road"></canvas>
+        <canvas id="g2" aria-label="Heard frequency over time"></canvas>
         <div class="cards">
-          <div class="card"><h4>Duyulan frekans</h4><div class="big" id="r2-f">–</div><div class="sub" id="r2-s">–</div></div>
-          <div class="card"><h4>En yüksek (yaklaşırken)</h4><div class="big" id="r2-hi">–</div><div class="sub">f₀·v/(v − v<sub>k</sub>)</div></div>
-          <div class="card"><h4>En düşük (uzaklaşırken)</h4><div class="big" id="r2-lo">–</div><div class="sub">f₀·v/(v + v<sub>k</sub>)</div></div>
-          <div class="card"><h4>Ses seviyesi</h4><div class="big" id="r2-v">–</div><div class="sub">∝ 1/R, frekanstan bağımsız</div></div>
+          <div class="card"><h4>Heard frequency</h4><div class="big" id="r2-f">–</div><div class="sub" id="r2-s">–</div></div>
+          <div class="card"><h4>Highest (approaching)</h4><div class="big" id="r2-hi">–</div><div class="sub">f₀·v/(v − v<sub>s</sub>)</div></div>
+          <div class="card"><h4>Lowest (receding)</h4><div class="big" id="r2-lo">–</div><div class="sub">f₀·v/(v + v<sub>s</sub>)</div></div>
+          <div class="card"><h4>Sound level</h4><div class="big" id="r2-v">–</div><div class="sub">∝ 1/R, independent of frequency</div></div>
         </div>
         <pre class="eq" id="eq2"></pre>
+        <div class="dock">
+          <div class="dock-btns">
+            <button class="btn primary" id="play2" type="button">Pause</button>
+            <button class="btn" id="reset2" type="button">Restart</button>
+            <button class="btn" id="snd2" type="button" aria-pressed="false">Sound on</button>
+          </div>
+          <label class="ctl"><span class="ctl-h"><span>Time scale</span><output id="o-m2"></output></span><input type="range" id="m2" min="0.5" max="4" step="0.5" value="1.5"></label>
+          <label class="ctl"><span class="ctl-h"><span>Horn frequency <small>f₀</small></span><output id="o-f02"></output></span><input type="range" id="f02" min="200" max="1500" step="10" value="700"></label>
+          <label class="ctl"><span class="ctl-h"><span>Vehicle speed <small>v<sub>s</sub></small></span><output id="o-vs2"></output></span><input type="range" id="vs2" min="5" max="300" step="5" value="60"></label>
+          <label class="ctl"><span class="ctl-h"><span>Distance from the road <small>d</small></span><output id="o-d2"></output></span><input type="range" id="d2" min="2" max="120" step="1" value="25"></label>
+          <label class="ctl"><span class="ctl-h"><span>Air temperature</span><output id="o-t2s"></output></span><input type="range" id="t2s" min="-20" max="45" step="1" value="20"></label>
+          <label class="ctl"><span class="ctl-h"><span>Sound type</span></span>
+            <select id="sound2"><option value="horn">Horn (steady tone)</option><option value="siren">Ambulance siren (two-tone)</option></select>
+          </label>
+        </div>
       </div>
       <aside class="side">
         <div class="panel">
-          <h3>Çalıştır</h3>
-          <div class="row" style="margin-bottom:14px">
-            <button class="btn primary" id="play2" type="button">Duraklat</button>
-            <button class="btn" id="reset2" type="button">Başa al</button>
-            <button class="btn" id="snd2" type="button" aria-pressed="false">Sesi aç</button>
-          </div>
-          <label class="ctl"><span class="ctl-h"><span>Zaman hızı</span><output id="o-m2"></output></span><input type="range" id="m2" min="0.5" max="4" step="0.5" value="1.5"></label>
-          <label class="ctl"><span class="ctl-h"><span>Ses türü</span></span>
-            <select id="sound2"><option value="horn">Korna (sabit ton)</option><option value="siren">Ambulans sireni (iki tonlu)</option></select>
-          </label>
-        </div>
-        <div class="panel">
-          <h3>Parametreler</h3>
-          <label class="ctl"><span class="ctl-h"><span>Kornanın frekansı <small>f₀</small></span><output id="o-f02"></output></span><input type="range" id="f02" min="200" max="1500" step="10" value="700"></label>
-          <label class="ctl"><span class="ctl-h"><span>Araç hızı <small>v<sub>k</sub></small></span><output id="o-vs2"></output></span><input type="range" id="vs2" min="5" max="300" step="5" value="60"></label>
-          <label class="ctl"><span class="ctl-h"><span>Yola uzaklık <small>d</small></span><output id="o-d2"></output></span><input type="range" id="d2" min="2" max="120" step="1" value="25"></label>
-          <label class="ctl"><span class="ctl-h"><span>Hava sıcaklığı</span><output id="o-t2s"></output></span><input type="range" id="t2s" min="-20" max="45" step="1" value="20"></label>
-          <h3 style="margin-top:4px">Hazır durumlar</h3>
+          <h3>Presets</h3>
           <div class="chips" id="presets2">
-            <button class="chip" type="button" data-vs="15" data-d="25">Bisiklet</button>
+            <button class="chip" type="button" data-vs="15" data-d="25">Bicycle</button>
             <button class="chip" type="button" data-vs="60" data-d="25">Ambulans</button>
-            <button class="chip" type="button" data-vs="60" data-d="3">Çok yakından</button>
-            <button class="chip" type="button" data-vs="60" data-d="100">Uzaktan</button>
-            <button class="chip" type="button" data-vs="250" data-d="40">Savaş uçağı</button>
+            <button class="chip" type="button" data-vs="60" data-d="3">Very close</button>
+            <button class="chip" type="button" data-vs="60" data-d="100">From afar</button>
+            <button class="chip" type="button" data-vs="250" data-d="40">Fighter jet</button>
           </div>
         </div>
         <div class="panel">
-          <p class="note"><b>Neden eğri yumuşak?</b> Araç tam size doğru gelmez. Hız bileşeni cos θ kadar etkili olur. Yol ne kadar yakınsa (d küçükse) θ o kadar ani değişir ve geçiş anındaki düşüş o kadar dik olur.</p>
-          <p class="note" style="margin-top:8px"><b>Gözlemciyi sürükleyin:</b> yola yaklaştırın, uzaklaştırın ya da yan tarafa alın; grafik anında yeniden hesaplanır. Kesikli ışın: şu an duyduğunuz sesin çıktığı <em>eski</em> konum. Ses sonlu hızla geldiği için araç hep biraz ilerisindedir.</p>
+          <p class="note"><b>Why is the curve smooth?</b> The vehicle does not head straight at you. Only the component of its velocity along the line of sight, v<sub>s</sub> cos θ, counts. The closer the road (the smaller d), the faster θ changes and the steeper the drop as it passes.</p>
+          <p class="note" style="margin-top:8px"><b>Drag the observer:</b> move it closer to the road, farther away or off to the side; the graph recomputes instantly. Dashed ray: the <em>earlier</em> position where the sound you are hearing now was emitted. Sound travels at a finite speed, so the vehicle is always a little further along.</p>
         </div>
       </aside>
     </div>
@@ -260,103 +287,104 @@ footer{margin-top:40px;color:var(--muted);font-size:13px}
   <section class="tab" id="t3" role="tabpanel" aria-labelledby="tb-t3" hidden>
     <div class="lab">
       <div class="stage">
-        <canvas id="c3" aria-label="Işığın dalga boyu ve tayf çizgilerinin kayması"></canvas>
+        <canvas id="c3" aria-label="Wavelength of light and shift of spectral lines"></canvas>
         <div class="cards">
-          <div class="card"><h4>Hız oranı β = v/c</h4><div class="big" id="r3-b">–</div><div class="sub" id="r3-z">z –</div></div>
-          <div class="card"><h4>Seçili çizgi</h4><div class="big" id="r3-l">–</div><div class="sub" id="r3-d">–</div></div>
-          <div class="card"><h4>Klasik formül ile</h4><div class="big" id="r3-k">–</div><div class="sub" id="r3-kd">λ₀(1 + v/c)</div></div>
-          <div class="card"><h4>Renk</h4><div class="big" id="r3-c">–</div><div class="sub" id="r3-cd">–</div></div>
+          <div class="card"><h4>Speed ratio β = v/c</h4><div class="big" id="r3-b">–</div><div class="sub" id="r3-z">z –</div></div>
+          <div class="card"><h4>Selected line</h4><div class="big" id="r3-l">–</div><div class="sub" id="r3-d">–</div></div>
+          <div class="card"><h4>With the classical formula</h4><div class="big" id="r3-k">–</div><div class="sub" id="r3-kd">λ₀(1 + v/c)</div></div>
+          <div class="card"><h4>Color</h4><div class="big" id="r3-c">–</div><div class="sub" id="r3-cd">–</div></div>
         </div>
         <pre class="eq" id="eq3"></pre>
-      </div>
-      <aside class="side">
-        <div class="panel">
-          <h3>Çalıştır</h3>
-          <div class="row" style="margin-bottom:14px">
-            <button class="btn primary" id="play3" type="button">Duraklat</button>
+        <div class="dock">
+          <div class="dock-btns">
+            <button class="btn primary" id="play3" type="button">Pause</button>
           </div>
-          <label class="ctl"><span class="ctl-h"><span>Kaynağın hızı <small>(+ uzaklaşır)</small></span><output id="o-v3"></output></span><input type="range" id="v3" min="-150000" max="150000" step="500" value="45000"></label>
-          <h3 style="margin-top:4px">İzlenen çizgi</h3>
-          <div class="chips" id="lines3">
+          <label class="ctl"><span class="ctl-h"><span>Source speed <small>(+ receding)</small></span><output id="o-v3"></output></span><input type="range" id="v3" min="-150000" max="150000" step="500" value="45000"></label>
+          <div class="dock-cell"><span class="dock-l">Tracked line</span><div class="chips" id="lines3">
             <button class="chip" type="button" data-line="393.4" data-name="Ca K">Ca K</button>
             <button class="chip" type="button" data-line="434.0" data-name="Hγ">Hγ</button>
             <button class="chip" type="button" data-line="486.1" data-name="Hβ" aria-pressed="true">Hβ</button>
             <button class="chip" type="button" data-line="656.3" data-name="Hα">Hα</button>
-          </div>
-          <h3 style="margin-top:16px">Hazır durumlar</h3>
+          </div></div>
+        </div>
+      </div>
+      <aside class="side">
+        <div class="panel">
+          <h3>Presets</h3>
           <div class="chips" id="presets3">
-            <button class="chip" type="button" data-v="0">Durgun</button>
+            <button class="chip" type="button" data-v="0">At rest</button>
             <button class="chip" type="button" data-v="-300">Andromeda</button>
-            <button class="chip" type="button" data-v="6900">Coma kümesi</button>
-            <button class="chip" type="button" data-v="43900">Kuasar 3C 273</button>
-            <button class="chip" type="button" data-v="-90000">Yaklaşan (0,3c)</button>
+            <button class="chip" type="button" data-v="6900">Coma Cluster</button>
+            <button class="chip" type="button" data-v="43900">Quasar 3C 273</button>
+            <button class="chip" type="button" data-v="-90000">Approaching (0.3c)</button>
           </div>
         </div>
         <div class="panel">
-          <p class="note">Işığın ortamı yoktur; yalnızca kaynak ile gözlemci arasındaki <b>bağıl hız</b> önemlidir ve formül görelilik düzeltmesi içerir. Çok büyük z değerlerinde kayma, uzayın genişlemesinden de gelir.</p>
+          <p class="note">Light has no medium; only the <b>relative velocity</b> between source and observer matters, and the formula includes the relativistic correction. At very large z, part of the shift comes from the expansion of space.</p>
         </div>
       </aside>
     </div>
   </section>
 
   <section class="info">
-    <h2>Derste izleme sırası</h2>
+    <h2>Suggested order for class</h2>
     <ol class="steps">
-      <li><b>Durgun kaynak</b>Halkalar eş merkezlidir ve her yönde aynı sıklıkta gözlemciye ulaşır. f′ = f₀.</li>
-      <li><b>Kaynağı yürütün</b>Her halkanın merkezi, dalganın çıktığı yerde kalır. Merkezleri göstererek bunu kanıtlayın.</li>
-      <li><b>Mach 0,9 ve Mach 1</b>Önde halkalar üst üste biner, dalga boyu sıfıra yaklaşır. Mach 1'de A hiçbir şey duymaz.</li>
-      <li><b>Mach 1,5</b>Halkaların zarfı bir koni oluşturur ve sin θ = v/v<sub>k</sub> olur. C gözlemcisi şok dalgasını duyar.</li>
-      <li><b>Gözlemciyi hareket ettirin</b>Kaynak durgun, gözlemci koşuyor: dalga boyu aynı kalır, ulaşma sıklığı değişir.</li>
-      <li><b>Geçen araç</b>Sekme 2'de ses yükseği düşüşe nasıl dönüşür, kulakla ve grafikle birlikte görün.</li>
-      <li><b>Işık</b>Sekme 3'te aynı fikir renge ve tayf çizgilerine uygulanır.</li>
+      <li><b>Stationary source</b>The rings are concentric and reach every observer at the same rate. f′ = f₀.</li>
+      <li><b>Set the source moving</b>Each ring stays centered where the wave was emitted. Show the centers to prove it.</li>
+      <li><b>Mach 0.9 and Mach 1</b>Rings pile up in front and the wavelength shrinks toward zero. At Mach 1, A hears nothing.</li>
+      <li><b>Mach 1.5</b>The envelope of the rings forms a cone with sin θ = v/v<sub>s</sub>. An observer hears the shock wave when the cone reaches them.</li>
+      <li><b>Move the observer</b>Source at rest, observer running: the wavelength stays the same, the arrival rate changes.</li>
+      <li><b>Passing vehicle</b>In tab 2, see and hear how a high pitch turns into a low one, with the graph alongside.</li>
+      <li><b>Light</b>In tab 3 the same idea applies to color and spectral lines.</li>
     </ol>
   </section>
 
   <section class="info">
-    <h2>Formül kartı</h2>
+    <h2>Formula card</h2>
     <div class="formulas">
-      <div class="fcard"><h3>Genel durum (doğrusal hareket)</h3><div class="f">f′ = f₀ · (v + v<sub>g</sub>) / (v − v<sub>k</sub>)</div><p>v ses hızı, v<sub>g</sub> gözlemcinin kaynağa doğru hızı, v<sub>k</sub> kaynağın gözlemciye doğru hızı. Yaklaşma pozitif, uzaklaşma negatiftir.</p></div>
-      <div class="fcard"><h3>Yoldan geçen kaynak</h3><div class="f">f′ = f₀ · v / (v − v<sub>k</sub> cos θ)</div><p>θ, kaynağın hız vektörü ile gözlemciye çizilen doğru arasındaki açıdır. θ = 90° iken f′ = f₀ olur.</p></div>
-      <div class="fcard"><h3>Mach sayısı ve şok konisi</h3><div class="f">M = v<sub>k</sub> / v &nbsp; sin θ = 1 / M</div><p>M &gt; 1 olunca kaynak kendi dalgalarını geçer. Koni yarı açısı θ'dır.</p></div>
-      <div class="fcard"><h3>Havada ses hızı</h3><div class="f">v ≈ 331,3 + 0,606 · T</div><p>T, °C cinsinden hava sıcaklığıdır. 20 °C'de yaklaşık 343 m/s.</p></div>
-      <div class="fcard"><h3>Işık (göreli Doppler)</h3><div class="f">λ′ = λ₀ √((1 + β)/(1 − β))</div><p>β = v/c, uzaklaşırken pozitif. z = (λ′ − λ₀)/λ₀ kırmızıya kayma değeridir; düşük hızda z ≈ v/c.</p></div>
+      <div class="fcard"><h3>General case (motion along a line)</h3><div class="f">f′ = f₀ · (v + v<sub>o</sub>) / (v − v<sub>s</sub>)</div><p>v is the speed of sound, v<sub>o</sub> the observer's speed toward the source, v<sub>s</sub> the source's speed toward the observer. Approaching is positive, receding is negative.</p></div>
+      <div class="fcard"><h3>Source passing by</h3><div class="f">f′ = f₀ · v / (v − v<sub>s</sub> cos θ)</div><p>θ is the angle between the source's velocity vector and the line to the observer. At θ = 90°, f′ = f₀.</p></div>
+      <div class="fcard"><h3>Mach number and shock cone</h3><div class="f">M = v<sub>s</sub> / v &nbsp; sin θ = 1 / M</div><p>When M &gt; 1 the source outruns its own waves. θ is the half-angle of the cone.</p></div>
+      <div class="fcard"><h3>Speed of sound in air</h3><div class="f">v ≈ 331.3 + 0.606 · T</div><p>T is the air temperature in °C. About 343 m/s at 20 °C.</p></div>
+      <div class="fcard"><h3>Light (relativistic Doppler)</h3><div class="f">λ′ = λ₀ √((1 + β)/(1 − β))</div><p>β = v/c, positive when receding. z = (λ′ − λ₀)/λ₀ is the redshift; at low speed z ≈ v/c.</p></div>
     </div>
     <div class="tablewrap" style="margin-top:12px">
       <table>
-        <thead><tr><th>Durum</th><th>v<sub>k</sub></th><th>v<sub>g</sub></th><th>Sonuç</th></tr></thead>
+        <thead><tr><th>Case</th><th>v<sub>s</sub></th><th>v<sub>o</sub></th><th>Result</th></tr></thead>
         <tbody>
-          <tr><td>Kaynak yaklaşıyor</td><td>+</td><td>0</td><td>f′ &gt; f₀, dalga boyu kısalır</td></tr>
-          <tr><td>Kaynak uzaklaşıyor</td><td>−</td><td>0</td><td>f′ &lt; f₀, dalga boyu uzar</td></tr>
-          <tr><td>Gözlemci yaklaşıyor</td><td>0</td><td>+</td><td>f′ &gt; f₀, dalga boyu değişmez</td></tr>
-          <tr><td>Gözlemci uzaklaşıyor</td><td>0</td><td>−</td><td>f′ &lt; f₀, dalga boyu değişmez</td></tr>
+          <tr><td>Source approaching</td><td>+</td><td>0</td><td>f′ &gt; f₀, wavelength shortens</td></tr>
+          <tr><td>Source receding</td><td>−</td><td>0</td><td>f′ &lt; f₀, wavelength lengthens</td></tr>
+          <tr><td>Observer approaching</td><td>0</td><td>+</td><td>f′ &gt; f₀, wavelength unchanged</td></tr>
+          <tr><td>Observer receding</td><td>0</td><td>−</td><td>f′ &lt; f₀, wavelength unchanged</td></tr>
         </tbody>
       </table>
     </div>
   </section>
 
   <section class="info">
-    <h2>Günlük hayatta ve bilimde</h2>
+    <h2>In daily life and in science</h2>
     <div class="apps">
-      <div><h3>Radar ve hız kontrolü</h3><p>Araçtan yansıyan dalganın frekans kayması, aracın hızını verir. Yansımada kayma iki kez uygulanır.</p></div>
-      <div><h3>Tıbbi ultrason</h3><p>Damardaki kan hücrelerinden yansıyan ses dalgaları, kanın akış yönünü ve hızını ölçer.</p></div>
-      <div><h3>Hava radarı</h3><p>Yağış damlalarının hareketi rüzgâr ve fırtına dönüşünü gösterir.</p></div>
-      <div><h3>Ötegezegen avı</h3><p>Yıldızın ışığındaki çizgiler periyodik olarak kayar. Gezegen yıldızı hafifçe çeker.</p></div>
-      <div><h3>Genişleyen evren</h3><p>Uzak galaksilerin çizgileri kırmızıya kayar. Hubble yasası v = H₀·d, H₀ ≈ 70 km/s/Mpc.</p></div>
-      <div><h3>Yarasa ve yunus</h3><p>Yankının frekans kaymasını kullanarak av ve engelin hızını algılarlar.</p></div>
+      <div><h3>Radar and speed checks</h3><p>The frequency shift of a wave reflected from a vehicle gives its speed. On reflection the shift is applied twice.</p></div>
+      <div><h3>Medical ultrasound</h3><p>Sound waves reflected from blood cells in a vessel measure the direction and speed of blood flow.</p></div>
+      <div><h3>Weather radar</h3><p>The motion of raindrops reveals wind and the rotation of storms.</p></div>
+      <div><h3>Exoplanet hunting</h3><p>Lines in a star's light shift periodically because an orbiting planet tugs the star slightly.</p></div>
+      <div><h3>The expanding universe</h3><p>Lines from distant galaxies are redshifted. Hubble's law: v = H₀·d, with H₀ ≈ 70 km/s/Mpc.</p></div>
+      <div><h3>Bats and dolphins</h3><p>They use the frequency shift of an echo to sense the speed of prey and obstacles.</p></div>
     </div>
   </section>
 
   <section class="info">
-    <h2>Sık yapılan yanlışlar</h2>
+    <h2>Common misconceptions</h2>
     <div class="myth">
-      <div><b>"Kaynağın frekansı değişir."</b><p>Kaynak aynı hızla titreşir. Değişen, gözlemciye birim zamanda ulaşan dalga sayısıdır.</p></div>
-      <div><b>"Ses daha şiddetli olur."</b><p>Yükseklik (frekans) ile şiddet (genlik) ayrı niceliklerdir. Ambulans yaklaşırken ikisi de değişir ama nedenleri farklıdır.</p></div>
-      <div><b>"Ses hızı kaynağın hızına eklenir."</b><p>Ses hızını ortam belirler. Kaynağın hareketi yalnızca dalga boyunu değiştirir.</p></div>
-      <div><b>"Mach 1'de ses geçemez."</b><p>Kaynak kendi dalgasına yetişir. Önündeki gözlemci, kaynak yanından geçene kadar hiçbir şey duymaz.</p></div>
+      <div><b>"The source's frequency changes."</b><p>The source vibrates at the same rate. What changes is the number of waves reaching the observer per second.</p></div>
+      <div><b>"The sound gets louder."</b><p>Pitch (frequency) and loudness (amplitude) are separate quantities. Both change as an ambulance approaches, but for different reasons.</p></div>
+      <div><b>"The speed of sound adds to the source's speed."</b><p>The medium sets the speed of sound. The source's motion only changes the wavelength.</p></div>
+      <div><b>"Sound cannot get through at Mach 1."</b><p>The source catches up with its own wave. An observer ahead hears nothing until the source passes by.</p></div>
     </div>
   </section>
 
-  <footer>Tüm hesaplar canlı olarak ölçülür: gözlemciye ulaşan dalga tepeleri arasındaki süre sayılır ve formülle karşılaştırılır. Tuş kısayolları: <span class="kbd">1</span> <span class="kbd">2</span> <span class="kbd">3</span> sekmeler, <span class="kbd">Boşluk</span> duraklat, <span class="kbd">R</span> başa al.</footer>
+  <footer>Everything is measured live: the time between wave crests reaching an observer is counted and compared with the formula. Shortcuts: <span class="kbd">1</span> <span class="kbd">2</span> <span class="kbd">3</span> tabs, <span class="kbd">Space</span> pause, <span class="kbd">R</span> restart.</footer>
+  <div class="credit"><span>Prepared by</span><b>Mehtap Aydoğan</b></div>
 </div>
 
 <script>
@@ -365,7 +393,7 @@ footer{margin-top:40px;color:var(--muted);font-size:13px}
 const $ = (s, r = document) => r.querySelector(s);
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 const TAU = Math.PI * 2;
-const fmt = (x, d = 2) => Number(x).toLocaleString('tr-TR', { minimumFractionDigits: d, maximumFractionDigits: d });
+const fmt = (x, d = 2) => Number(x).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
 const sgn = (x) => (x < 0 ? '−' : '+');
 let active = 't1';
 
@@ -482,7 +510,7 @@ function label(ctx, txt, x, y, w, col, size, align = 'center', weight = 600) {
 }
 
 /* ============================================================
-   SEKME 1: dalga cepheleri
+   TAB 1: wavefronts
    ============================================================ */
 const W1 = 1200;
 const sim = { gt: 0, tr: 0, nextEmit: 0, waves: [], emitGt: [], xs: 0, obs: [], booms: [],
@@ -498,6 +526,7 @@ function reset1() {
   const H = worldH();
   if (!sim.layout) sim.layout = { s: { x: (sim.vs >= 0 ? 0.26 : 0.74) * W1, y: 0 }, o: [{ x: 0.93 * W1, y: 0, vx: sim.vo, vy: 0, dx: 1, dy: 0 }, { x: 0.07 * W1, y: 0, vx: sim.vo, vy: 0, dx: 1, dy: 0 }, { x: 0.58 * W1, y: 0.3 * H, vx: 0, vy: 0, dx: 1, dy: 0 }] };
   const L = sim.layout;
+  if (!sim.custom) L.o[2].y = 0.3 * H;
   sim.xs = L.s.x; sim.ys = L.s.y; sim.startX = L.s.x;
   const mk = (id, i, col) => ({ id, x: L.o[i].x, y: L.o[i].y, vx: L.o[i].vx, vy: L.o[i].vy, dx: L.o[i].dx, dy: L.o[i].dy, arr: [], fm: null, lastTc: null, lastGt: -99, flash: 0, th: null, col, hits: 0 });
   sim.obs = [mk('A', 0, 'green'), mk('B', 1, 'amber'), mk('C', 2, 'violet')];
@@ -563,7 +592,7 @@ function step1(dt) {
   });
   sim.booms.forEach((b) => { b.f -= dt * 0.9; }); sim.booms = sim.booms.filter((b) => b.f > 0);
   const Hw = worldH();
-  const out = (sim.vs !== 0 && (Math.abs(sim.xs - sim.startX) > 0.62 * W1 || sim.xs > 0.98 * W1 || sim.xs < 0.02 * W1)) || sim.obs.some((o) => o.x < 0.01 * W1 || o.x > 0.99 * W1 || o.y < -Hw * 0.44 || o.y > Hw * 0.56);
+  const out = (sim.vs !== 0 && (Math.abs(sim.xs - sim.startX) > 0.62 * W1 || sim.xs > 0.98 * W1 || sim.xs < 0.02 * W1)) || sim.obs.some((o) => o.x < 0.01 * W1 || o.x > 0.99 * W1 || (o.vy !== 0 && (o.y < -Hw * 0.44 || o.y > Hw * 0.56)));
   if (out) reset1();
 }
 function stepN(dt) { const n = Math.max(1, Math.ceil(dt / 0.01)); for (let i = 0; i < n; i++) step1(dt / n); }
@@ -618,7 +647,7 @@ function draw1() {
       label(ctx, `${name} = ${fmt(lam, 0)} m`, X((x1 + x2) / 2), Y(yb) - 14, w, pal.fg, fs, 'center', 600);
     };
     const front = sim.vs >= 0 ? 1 : -1;
-    const lab = (side) => (Math.abs(sim.vs) < 1 ? 'λ' : side * front > 0 ? 'λ ön' : 'λ arka');
+    const lab = (side) => (Math.abs(sim.vs) < 1 ? 'λ' : side * front > 0 ? 'λ front' : 'λ back');
     draw(w1.x + w1.r, w2.x + w2.r, lab(1));
     draw(w1.x - w1.r, w2.x - w2.r, lab(-1));
   }
@@ -639,9 +668,9 @@ function draw1() {
     ctx.fillStyle = pal.stage; ctx.beginPath(); ctx.arc(x, y, 9, 0, TAU); ctx.fill();
     ctx.fillStyle = c; ctx.beginPath(); ctx.arc(x, y, 7, 0, TAU); ctx.fill();
     ctx.fillStyle = pal.stage; ctx.font = font(10, 700); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(o.id, x, y + 0.5);
-    if (sim.listen === o.id) { ctx.strokeStyle = c; ctx.lineWidth = 2.5; ctx.setLineDash([]); ctx.beginPath(); ctx.arc(x, y, 14, 0, TAU); ctx.stroke(); label(ctx, '♪ dinleniyor', x, y + 32 * (fs / 13), w, c, fs * 0.85, 'center', 600); }
+    if (sim.listen === o.id) { ctx.strokeStyle = c; ctx.lineWidth = 2.5; ctx.setLineDash([]); ctx.beginPath(); ctx.arc(x, y, 14, 0, TAU); ctx.stroke(); label(ctx, '♪ listening', x, y + 32 * (fs / 13), w, c, fs * 0.85, 'center', 600); }
     let f = o.fm; if (f === null && o.th && o.th.f) f = o.th.f;
-    const txt = o.id === 'C' ? (o.fm ? `${fmt(o.fm)} Hz` : '–') : (o.th && o.th.f === null ? 'ses ulaşmıyor' : `${fmt(f || 0)} Hz`);
+    const txt = o.id === 'C' ? (o.fm ? `${fmt(o.fm)} Hz` : '–') : (o.th && o.th.f === null ? 'no signal' : `${fmt(f || 0)} Hz`);
     label(ctx, txt, x, y - 24 * (fs / 13), w, c, fs * 1.15, 'center', 700);
   });
   // kaynak
@@ -653,7 +682,7 @@ function draw1() {
     ctx.fillStyle = pal.fg; ctx.beginPath(); ctx.arc(x, y, 8, 0, TAU); ctx.fill();
     ctx.fillStyle = pal.stage; ctx.beginPath(); ctx.arc(x, y, 3, 0, TAU); ctx.fill();
     if (sim.vs !== 0) arrow(ctx, x, y, x + clamp(sim.vs * 0.25, -190, 190) * s * 1.0 + Math.sign(sim.vs) * 14, y, pal.fg, 2.5);
-    label(ctx, `Kaynak · ${fmt(Math.abs(sim.vs), 0)} m/s · Mach ${fmt(mAbs)}`, x, y + 34 * (fs / 13), w, pal.fg, fs, 'center', 600);
+    label(ctx, `Source · ${fmt(Math.abs(sim.vs), 0)} m/s · Mach ${fmt(mAbs)}`, x, y + 34 * (fs / 13), w, pal.fg, fs, 'center', 600);
   }
   // sürüklenebilir nesneler için tutamaç
   {
@@ -673,23 +702,23 @@ function draw1() {
     ctx.strokeStyle = pal.amber; ctx.lineWidth = 3; ctx.globalAlpha = b.f;
     ctx.beginPath(); ctx.arc(X(b.x), Y(b.y), 14 + p * 90, 0, TAU); ctx.stroke();
     ctx.beginPath(); ctx.arc(X(b.x), Y(b.y), 8 + p * 50, 0, TAU); ctx.stroke(); ctx.globalAlpha = 1;
-    label(ctx, `ŞOK DALGASI · ${b.id} · sonik patlama`, X(b.x), Y(b.y) + 36, w, pal.amber, fs * 1.2, 'center', 800);
+    label(ctx, `SHOCK WAVE · ${b.id} · sonic boom`, X(b.x), Y(b.y) + 36, w, pal.amber, fs * 1.2, 'center', 800);
   }
   ctx.restore();
   // açıklama
   ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
   const lg = (x, col, txt) => { ctx.fillStyle = rgba(col, 1); ctx.beginPath(); ctx.arc(x, 20, 5, 0, TAU); ctx.fill(); ctx.font = font(fs * 0.85, 500); ctx.fillStyle = pal.muted; ctx.fillText(txt, x + 11, 20); return x + 11 + ctx.measureText(txt).width + 18; };
-  let lx = 14; lx = lg(lx, pal.blue, 'sıkışma · tiz'); lg(lx, pal.hot, 'gerilme · pes');
+  let lx = 14; lx = lg(lx, pal.blue, 'compression · high pitch'); lg(lx, pal.hot, 'stretching · low pitch');
   ctx.fillStyle = pal.muted; ctx.font = font(fs * 0.85, 500); ctx.textAlign = 'right';
   ctx.fillText(`v = ${fmt(v, 1)} m/s  ·  λ₀ = ${fmt(v / sim.f0, 0)} m`, w - 14, 20); ctx.textAlign = 'left';
-  ctx.font = font(fs * 0.8, 500); ctx.fillText('Sürükle: konum · ◆ tutamak: hız ve yön · gözlemciye tıkla: onun duyduğunu dinle', 14, 42);
+  ctx.font = font(fs * 0.8, 500); ctx.fillText('Drag: position · ◆ handle: speed and direction · click an observer to hear what it hears', 14, 42);
 }
 
 function drawStrip() {
   const { ctx, w, h, dpr } = cs1; if (!w) return;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.fillStyle = pal.stage; ctx.fillRect(0, 0, w, h);
-  const rows = [{ n: 'Kaynak', ev: sim.emitGt, c: pal.fg }, { n: 'A', ev: sim.obs[0].arr, c: pal.green }, { n: 'B', ev: sim.obs[1].arr, c: pal.amber }, { n: 'C', ev: sim.obs[2].arr, c: pal.violet }];
+  const rows = [{ n: 'Source', ev: sim.emitGt, c: pal.fg }, { n: 'A', ev: sim.obs[0].arr, c: pal.green }, { n: 'B', ev: sim.obs[1].arr, c: pal.amber }, { n: 'C', ev: sim.obs[2].arr, c: pal.violet }];
   const L = 66, win = 8, rh = h / rows.length;
   rows.forEach((r, i) => {
     const cy = rh * (i + 0.5);
@@ -703,36 +732,36 @@ function drawStrip() {
     }
   });
   ctx.lineCap = 'butt';
-  ctx.font = font(11, 500); ctx.fillStyle = pal.muted; ctx.textAlign = 'right'; ctx.textBaseline = 'top'; ctx.fillText('şimdi →', w - 6, 3);
+  ctx.font = font(11, 500); ctx.fillStyle = pal.muted; ctx.textAlign = 'right'; ctx.textBaseline = 'top'; ctx.fillText('now →', w - 6, 3);
 }
 
 function readouts1() {
   const v = vSound(), M = sim.vs / v;
   $('#r-f0').innerHTML = `${fmt(sim.f0, 1)} <small>Hz</small>`;
   $('#r-lam').textContent = `λ₀ = ${fmt(v / sim.f0, 1)} m`;
-  $('#r-mach').textContent = `Mach ${fmt(Math.abs(M))}` + (Math.abs(M) > 1 ? ' · süpersonik' : Math.abs(M) === 1 ? ' · ses hızı' : ' · sesaltı');
+  $('#r-mach').textContent = `Mach ${fmt(Math.abs(M))}` + (Math.abs(M) > 1 ? ' · supersonic' : Math.abs(M) === 1 ? ' · speed of sound' : ' · subsonic');
   const bar = (id, ratio) => { const e = $(id); if (!e) return; e.style.left = clamp(50 + Math.log2(ratio) * 25, 2, 98) + '%'; };
-  const tagOf = (r) => (Math.abs(r - 1) < 0.01 ? '<span class="tag">aynı</span>' : r > 1 ? '<span class="tag hi">tiz</span>' : '<span class="tag lo">pes</span>');
+  const tagOf = (r) => (Math.abs(r - 1) < 0.01 ? '<span class="tag">same</span>' : r > 1 ? '<span class="tag hi">high</span>' : '<span class="tag lo">low</span>');
   ['A', 'B'].forEach((id, i) => {
     const o = sim.obs[i], el = $('#r' + id + '-m'), tt = $('#r' + id + '-t');
     if (!o.th) return;
-    if (o.th.f === null) { el.innerHTML = '<small>duyulmuyor</small>'; tt.textContent = 'dalga gözlemciye ulaşamıyor'; return; }
+    if (o.th.f === null) { el.innerHTML = '<small>not heard</small>'; tt.textContent = 'the wave cannot reach the observer'; return; }
     const val = o.fm || (o.th && o.th.f) || sim.f0;
     el.innerHTML = `${fmt(val)} <small>Hz</small>${tagOf(val / sim.f0)}`;
-    tt.textContent = `formül ${fmt(o.th.f)} Hz · oran ${fmt(o.th.f / sim.f0)}`;
+    tt.textContent = `formula ${fmt(o.th.f)} Hz · ratio ${fmt(o.th.f / sim.f0)}`;
     bar('#r' + id + '-b', val / sim.f0);
   });
   const C = sim.obs[2];
-  if (C.fm) { $('#rC-m').innerHTML = `${fmt(C.fm)} <small>Hz</small>${tagOf(C.fm / sim.f0)}`; bar('#rC-b', C.fm / sim.f0); $('#rC-t').textContent = `oran ${fmt(C.fm / sim.f0)} · yalnızca ölçüm`; }
-  else { $('#rC-m').innerHTML = '<small>bekleniyor</small>'; $('#rC-t').textContent = Math.abs(M) > 1 ? 'şok dalgası bekleniyor' : 'ölçüm bekleniyor'; }
-  if (C.fm && C.th && C.th.f) $('#rC-t').textContent = `formül ≈ ${fmt(C.th.f)} Hz (anlık açı)`;
+  if (C.fm) { $('#rC-m').innerHTML = `${fmt(C.fm)} <small>Hz</small>${tagOf(C.fm / sim.f0)}`; bar('#rC-b', C.fm / sim.f0); $('#rC-t').textContent = `ratio ${fmt(C.fm / sim.f0)} · measurement only`; }
+  else { $('#rC-m').innerHTML = '<small>waiting</small>'; $('#rC-t').textContent = Math.abs(M) > 1 ? 'waiting for the shock wave' : 'waiting for a measurement'; }
+  if (C.fm && C.th && C.th.f) $('#rC-t').textContent = `formula ≈ ${fmt(C.th.f)} Hz (instantaneous angle)`;
   const eqLine = (id, o) => {
-    if (!o.th || o.th.f === null) return `${id}:  f′ tanımsız  (v − v_k ≤ 0: dalga kaynağı geçemiyor ya da gözlemci kaçıyor)`;
+    if (!o.th || o.th.f === null) return `${id}:  f′ undefined  (v − v_s ≤ 0: the wave cannot overtake the source, or the observer outruns it)`;
     const a = (x) => fmt(Math.abs(x), 1);
     return `${id}:  f′ = f₀·(v ${sgn(o.th.vrT)} ${a(o.th.vrT)}) / (v ${o.th.vsT >= 0 ? '−' : '+'} ${a(o.th.vsT)})`
       + `\n    = ${fmt(sim.f0)}·(${fmt(v + o.th.vrT, 1)}) / (${fmt(v - o.th.vsT, 1)}) = ${fmt(o.th.f)} Hz`;
   };
-  $('#eq1').textContent = `v = ${fmt(v, 1)} m/s    (v_k, v_g: hızların kaynak–alıcı doğrultusundaki bileşenleri)\n` + eqLine('A', sim.obs[0]) + '\n' + eqLine('B', sim.obs[1]) + '\n' + eqLine('C', sim.obs[2]);
+  $('#eq1').textContent = `v = ${fmt(v, 1)} m/s    (v_s, v_o: speed components along the source–observer line)\n` + eqLine('A', sim.obs[0]) + '\n' + eqLine('B', sim.obs[1]) + '\n' + eqLine('C', sim.obs[2]);
 }
 function audio1() {
   if (!audio.ctx) return;
@@ -758,15 +787,15 @@ const sVs = slider('vs', (v) => `${v > 0 ? '→ ' : v < 0 ? '← ' : ''}${fmt(Ma
 const sVo = slider('vo', (v) => `${v > 0 ? '→ ' : v < 0 ? '← ' : ''}${fmt(Math.abs(v), 0)} m/s`, (v) => { sim.vo = v; applyVo(v); });
 const sTmp = slider('tmp', (v) => `${v} °C · v = ${fmt(331.3 + 0.606 * v, 1)} m/s`, (v) => { sim.T = v; if (sVs) sVs.refresh(); });
 slider('ts', (v) => `${fmt(v, 1)}×`, (v) => { sim.ts = v; });
-$('#play1').addEventListener('click', () => { sim.playing = !sim.playing; $('#play1').textContent = sim.playing ? 'Duraklat' : 'Devam et'; });
-$('#step1').addEventListener('click', () => { sim.playing = false; $('#play1').textContent = 'Devam et'; stepN(1 / 30); });
+$('#play1').addEventListener('click', () => { sim.playing = !sim.playing; $('#play1').textContent = sim.playing ? 'Pause' : 'Resume'; });
+$('#step1').addEventListener('click', () => { sim.playing = false; $('#play1').textContent = 'Resume'; stepN(1 / 30); });
 $('#reset1').addEventListener('click', reset1);
 $('#layout1').addEventListener('click', () => { sim.custom = false; sim.layout = null; reset1(); });
 $('#sound1').addEventListener('change', (e) => { sim.sound = e.target.value; if (sim.listen !== 'off') ensureAudio(); setTone(440, 0); });
 $('#presets1').addEventListener('click', (e) => {
   const b = e.target.closest('.chip'); if (!b) return;
   sim.vs = 0; sVs.set(+b.dataset.vs); sVo.set(+b.dataset.vo); sim.custom = false; sim.layout = null; reset1();
-  sim.playing = true; $('#play1').textContent = 'Duraklat';
+  sim.playing = true; $('#play1').textContent = 'Pause';
 });
 [['color', 'tg-color'], ['centers', 'tg-centers'], ['lambda', 'tg-lambda'], ['cone', 'tg-cone']].forEach(([k, id]) => {
   $('#' + id).addEventListener('change', (e) => { sim.flags[k] = e.target.checked; });
@@ -816,7 +845,7 @@ reset1();
 for (let i = 0; i < 120; i++) stepN(1 / 30);
 
 /* ============================================================
-   SEKME 2: geçen araç
+   TAB 2: passing vehicle
    ============================================================ */
 const p2 = { f0: 700, vs: 60, d: 25, T: 20, mult: 1.5, t: 0, playing: true, L: 220, snd: false, curve: null, hold: 0, xo: 0, mode: 'horn' };
 const c2 = setup($('#c2')), g2 = setup($('#g2'));
@@ -846,11 +875,12 @@ function step2(dt) {
 }
 function draw2() {
   const { ctx, w, h, dpr } = c2; if (!w) return;
-  const s = w / 440, X = (x) => (x + 220) * s, Y = (y) => (y + 70) * s, fs = clamp(w / 64, 11, 17);
+  const s = Math.min(w / 440, h / 220), X = (x) => w / 2 + x * s, Y = (y) => (y + 90) * s, fs = clamp(w / 64, 11, 17);
+  const bigF = Math.min(clamp(w / 14, 26, 64), h * 0.14);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.fillStyle = pal.stage; ctx.fillRect(0, 0, w, h);
   ctx.strokeStyle = pal.grid; ctx.lineWidth = 1;
-  for (let x = -200; x <= 200; x += 50) { ctx.beginPath(); ctx.moveTo(X(x), 0); ctx.lineTo(X(x), h); ctx.stroke(); }
+  for (let x = -Math.floor(w / 2 / s / 50) * 50; x <= w / 2 / s; x += 50) { ctx.beginPath(); ctx.moveTo(X(x), 0); ctx.lineTo(X(x), h); ctx.stroke(); }
   // yol
   ctx.fillStyle = rgba(pal.fgc, 0.1); ctx.fillRect(0, Y(-10), w, 20 * s);
   ctx.strokeStyle = rgba(pal.fgc, 0.4); ctx.setLineDash([10 * s, 8 * s]); ctx.beginPath(); ctx.moveTo(0, Y(0)); ctx.lineTo(w, Y(0)); ctx.stroke(); ctx.setLineDash([]);
@@ -883,19 +913,19 @@ function draw2() {
   ctx.setLineDash([3, 4]); ctx.strokeStyle = pal.muted; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(ox, oy, 19, 0, TAU); ctx.stroke(); ctx.setLineDash([]);
   ctx.fillStyle = pal.stage; ctx.beginPath(); ctx.arc(ox, oy, 12, 0, TAU); ctx.fill();
   ctx.fillStyle = pal.green; ctx.beginPath(); ctx.arc(ox, oy, 10, 0, TAU); ctx.fill();
-  ctx.fillStyle = pal.stage; ctx.font = font(11, 700); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('Siz', ox, oy + 0.5);
+  ctx.fillStyle = pal.stage; ctx.font = font(11, 700); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('You', ox, oy + 0.5);
   ctx.restore();
   // büyük okuma
   let fNow = null;
   if (teH !== null && tAbs < g2fn(te1) + 0.001) fNow = f2(teH);
   const col = fNow === null ? pal.muted : Math.abs(fNow - p2.f0) < p2.f0 * 0.004 ? pal.fg : fNow > p2.f0 ? rgba(pal.blue, 1) : rgba(pal.hot, 1);
   ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-  ctx.font = font(clamp(w / 14, 26, 64), 700); ctx.fillStyle = col;
-  ctx.fillText(fNow === null ? '– Hz' : `${fmt(fNow, 0)} Hz`, 16, clamp(w / 14, 26, 64) + 10);
+  ctx.font = font(bigF, 700); ctx.fillStyle = col;
+  ctx.fillText(fNow === null ? '– Hz' : `${fmt(fNow, 0)} Hz`, 16, bigF + 10);
   ctx.font = font(fs, 500); ctx.fillStyle = pal.muted;
-  const st = fNow === null ? 'ses henüz ulaşmadı' : Math.abs(fNow - p2.f0) < p2.f0 * 0.004 ? 'araç tam karşınızda: f′ ≈ f₀' : fNow > p2.f0 ? 'yaklaşıyor: ses tiz' : 'uzaklaşıyor: ses pes';
-  ctx.fillText(st, 16, clamp(w / 14, 26, 64) + 10 + fs * 1.6);
-  ctx.font = font(fs * 0.8, 500); ctx.textAlign = 'right'; ctx.fillText('“Siz” işaretini sürükleyin', w - 14, 20); ctx.textAlign = 'left';
+  const st = fNow === null ? 'sound has not arrived yet' : Math.abs(fNow - p2.f0) < p2.f0 * 0.004 ? 'vehicle directly across from you: f′ ≈ f₀' : fNow > p2.f0 ? 'approaching: high pitch' : 'receding: low pitch';
+  ctx.fillText(st, 16, bigF + 10 + fs * 1.6);
+  ctx.font = font(fs * 0.8, 500); ctx.textAlign = 'right'; ctx.fillText('Drag the “You” marker', w - 14, 20); ctx.textAlign = 'left';
   p2.fNow = fNow; p2.teH = teH;
 }
 function vehicle(ctx, x, y, s, t, ghost) {
@@ -930,11 +960,11 @@ function drawGraph2() {
   const sx = niceStep(tMax, 6);
   ctx.textAlign = 'center'; ctx.textBaseline = 'top';
   for (let tt = 0; tt <= tMax; tt += sx) { ctx.beginPath(); ctx.moveTo(X(tt), t); ctx.lineTo(X(tt), t + ph); ctx.stroke(); ctx.fillText(fmt(tt, 1), X(tt), t + ph + 6); }
-  ctx.fillText('zaman (s)', l + pw / 2, h - fs - 2);
-  ctx.save(); ctx.translate(13, t + ph / 2); ctx.rotate(-Math.PI / 2); ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillText('duyulan frekans f′ (Hz)', 0, -6); ctx.restore();
+  ctx.fillText('time (s)', l + pw / 2, h - fs - 2);
+  ctx.save(); ctx.translate(13, t + ph / 2); ctx.rotate(-Math.PI / 2); ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillText('heard frequency f′ (Hz)', 0, -6); ctx.restore();
   // referans çizgileri
   const ref = (f, txt, c) => { ctx.strokeStyle = c; ctx.setLineDash([6, 5]); ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(l, Y(f)); ctx.lineTo(l + pw, Y(f)); ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle = c; ctx.textAlign = 'right'; ctx.textBaseline = 'bottom'; ctx.fillText(txt, l + pw - 6, Y(f) - 3); };
-  ref(fHi, `f₀v/(v−v_k) = ${fmt(fHi, 0)}`, rgba(pal.blue, 1)); ref(p2.f0, `f₀ = ${fmt(p2.f0, 0)}`, pal.muted); ref(fLo, `f₀v/(v+v_k) = ${fmt(fLo, 0)}`, rgba(pal.hot, 1));
+  ref(fHi, `f₀v/(v−v_s) = ${fmt(fHi, 0)}`, rgba(pal.blue, 1)); ref(p2.f0, `f₀ = ${fmt(p2.f0, 0)}`, pal.muted); ref(fLo, `f₀v/(v+v_s) = ${fmt(fLo, 0)}`, rgba(pal.hot, 1));
   // eğri
   const pts = p2.curve;
   ctx.lineWidth = 2; ctx.strokeStyle = rgba(pal.fgc, 0.22); ctx.beginPath();
@@ -955,12 +985,12 @@ function drawGraph2() {
 function readouts2() {
   const v = v2(), vs = vs2(), hi = p2.f0 * v / (v - vs), lo = p2.f0 * v / (v + vs);
   $('#r2-f').innerHTML = p2.fNow ? `${fmt(p2.fNow, 0)} <small>Hz</small>` : '<small>–</small>';
-  $('#r2-s').textContent = p2.fNow ? `oran f′/f₀ = ${fmt(p2.fNow / p2.f0)}` : 'ses henüz ulaşmadı';
+  $('#r2-s').textContent = p2.fNow ? `ratio f′/f₀ = ${fmt(p2.fNow / p2.f0)}` : 'sound has not arrived yet';
   $('#r2-hi').innerHTML = `${fmt(hi, 0)} <small>Hz</small>`; $('#r2-lo').innerHTML = `${fmt(lo, 0)} <small>Hz</small>`;
-  if (p2.teH !== null && p2.teH !== undefined) { const R = R2(p2.teH); $('#r2-v').innerHTML = `${fmt(clamp(20 * Math.log10(Math.max(p2.d, 2) / R), -40, 0), 0)} <small>dB (göreli)</small>`; }
+  if (p2.teH !== null && p2.teH !== undefined) { const R = R2(p2.teH); $('#r2-v').innerHTML = `${fmt(clamp(20 * Math.log10(Math.max(p2.d, 2) / R), -40, 0), 0)} <small>dB (relative)</small>`; }
   const te = p2.teH; let line = '';
   if (te !== null && te !== undefined) { const x = -p2.L + vs * te - p2.xo, R = Math.hypot(x, p2.d), cs = -x / R; line = `cos θ = ${fmt(cs, 3)}   →   f′ = ${fmt(p2.f0, 0)}·${fmt(v, 1)} / (${fmt(v, 1)} − ${fmt(vs, 1)}·${fmt(cs, 3)}) = ${fmt(p2.f0 * v / (v - vs * cs), 1)} Hz`; }
-  $('#eq2').textContent = `f′ = f₀ · v / (v − v_k·cos θ)      θ: aracın ses çıktığı andaki konumu ile hız yönü arasındaki açı\n` + (line || 'ses henüz ulaşmadı');
+  $('#eq2').textContent = `f′ = f₀ · v / (v − v_s·cos θ)      θ: angle between the velocity and the line to you, at the moment the sound was emitted\n` + (line || 'sound has not arrived yet');
 }
 function audio2() {
   if (!audio.ctx) return;
@@ -973,18 +1003,18 @@ function audio2() {
 slider('m2', (v) => `${fmt(v, 1)}×`, (v) => { p2.mult = v; });
 const invalidate = () => { p2.curve = null; };
 slider('f02', (v) => `${v} Hz`, (v) => { p2.f0 = v; invalidate(); });
-slider('vs2', (v) => `${v} m/s · ${fmt(v * 3.6, 0)} km/s`.replace('km/s', 'km/sa'), (v) => { p2.vs = v; invalidate(); p2.t = 0; });
+slider('vs2', (v) => `${v} m/s · ${fmt(v * 3.6, 0)} km/h`, (v) => { p2.vs = v; invalidate(); p2.t = 0; });
 slider('d2', (v) => `${v} m`, (v) => { p2.d = v; invalidate(); });
 slider('t2s', (v) => `${v} °C · v = ${fmt(331.3 + 0.606 * v, 1)} m/s`, (v) => { p2.T = v; invalidate(); });
-$('#play2').addEventListener('click', () => { p2.playing = !p2.playing; $('#play2').textContent = p2.playing ? 'Duraklat' : 'Devam et'; });
+$('#play2').addEventListener('click', () => { p2.playing = !p2.playing; $('#play2').textContent = p2.playing ? 'Pause' : 'Resume'; });
 $('#reset2').addEventListener('click', () => { p2.t = 0; });
 $('#snd2').addEventListener('click', () => {
-  p2.snd = !p2.snd; $('#snd2').setAttribute('aria-pressed', p2.snd); $('#snd2').textContent = p2.snd ? 'Sesi kapat' : 'Sesi aç';
+  p2.snd = !p2.snd; $('#snd2').setAttribute('aria-pressed', p2.snd); $('#snd2').textContent = p2.snd ? 'Sound off' : 'Sound on';
   if (p2.snd) ensureAudio(); else setTone(440, 0);
 });
 $('#sound2').addEventListener('change', (e) => { p2.mode = e.target.value; });
 const cv2 = $('#c2'); cv2.style.touchAction = 'none'; let drag2 = false;
-function pos2(e) { const r = cv2.getBoundingClientRect(), s = r.width / 440; return { x: (e.clientX - r.left) / s - 220, y: (e.clientY - r.top) / s - 70, s }; }
+function pos2(e) { const r = cv2.getBoundingClientRect(), s = Math.min(r.width / 440, r.height / 220); return { x: (e.clientX - r.left - r.width / 2) / s, y: (e.clientY - r.top) / s - 90, s }; }
 const near2 = (p) => Math.hypot(p.x - p2.xo, p.y - p2.d) * p.s < 26;
 cv2.addEventListener('pointerdown', (e) => { if (!near2(pos2(e))) return; drag2 = true; cv2.setPointerCapture(e.pointerId); e.preventDefault(); });
 cv2.addEventListener('pointermove', (e) => {
@@ -1002,7 +1032,7 @@ $('#presets2').addEventListener('click', (e) => {
 });
 
 /* ============================================================
-   SEKME 3: ışık
+   TAB 3: light
    ============================================================ */
 const C_LIGHT = 299792.458;
 const LINES = [{ n: 'Ca H+K', wl: [393.4, 396.8] }, { n: 'Hδ', wl: [410.2] }, { n: 'Hγ', wl: [434.0] }, { n: 'Hβ', wl: [486.1] }, { n: 'Mg', wl: [517.3] }, { n: 'Na D', wl: [589.3] }, { n: 'Hα', wl: [656.3] }];
@@ -1041,7 +1071,7 @@ function draw3() {
       x === x0 + 20 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
     }
     ctx.stroke();
-    if (!col) { ctx.fillStyle = pal.muted; ctx.textAlign = 'right'; ctx.fillText(wl > 750 ? 'kızılötesi: gözle görünmez' : 'morötesi: gözle görünmez', x1, cy - sceneH * 0.2); }
+    if (!col) { ctx.fillStyle = pal.muted; ctx.textAlign = 'right'; ctx.fillText(wl > 750 ? 'infrared: invisible to the eye' : 'ultraviolet: invisible to the eye', x1, cy - sceneH * 0.2); }
     // yıldız
     const g = ctx.createRadialGradient(x0, cy, 0, x0, cy, 28);
     g.addColorStop(0, `rgba(${c},.9)`); g.addColorStop(1, `rgba(${c},0)`);
@@ -1052,18 +1082,18 @@ function draw3() {
     ctx.strokeStyle = pal.fg; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(x1 + 14, cy, 12, 8, 0, 0, TAU); ctx.stroke();
     ctx.fillStyle = col ? `rgb(${c})` : pal.muted; ctx.beginPath(); ctx.arc(x1 + 14, cy, 4, 0, TAU); ctx.fill();
   };
-  lane(sceneH * 0.3, p3.line, colR, `Durgun kaynak · ${p3.name} ${fmt(p3.line, 1)} nm`, false);
-  lane(sceneH * 0.74, wlObs, colO, `Hareketli kaynak · ${fmt(wlObs, 1)} nm`, true);
+  lane(sceneH * 0.3, p3.line, colR, `Stationary source · ${p3.name} ${fmt(p3.line, 1)} nm`, false);
+  lane(sceneH * 0.74, wlObs, colO, `Moving source · ${fmt(wlObs, 1)} nm`, true);
   // etiket
   ctx.textAlign = 'right'; ctx.textBaseline = 'middle'; ctx.font = font(fs, 700);
   ctx.fillStyle = p3.v > 0 ? rgba(pal.hot, 1) : p3.v < 0 ? rgba(pal.blue, 1) : pal.muted;
-  ctx.fillText(p3.v > 0 ? 'Uzaklaşıyor → kırmızıya kayma' : p3.v < 0 ? 'Yaklaşıyor → maviye kayma' : 'Bağıl hız yok', w - pad, 18);
+  ctx.fillText(p3.v > 0 ? 'Receding → redshift' : p3.v < 0 ? 'Approaching → blueshift' : 'No relative velocity', w - pad, 18);
   // tayf şeritleri
   const sx = 60, sw = w - sx - 24, sh = clamp(h * 0.075, 22, 40);
   const nmX = (wl) => sx + ((wl - WL0) / (WL1 - WL0)) * sw;
   const y1 = sceneH + 22, y2 = y1 + sh + 52;
   ctx.font = font(fs * 0.85, 600); ctx.fillStyle = pal.muted; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-  ctx.fillText('durgun', 8, y1 + sh / 2); ctx.fillText('gözlenen', 8, y2 + sh / 2);
+  ctx.fillText('at rest', 8, y1 + sh / 2); ctx.fillText('observed', 8, y2 + sh / 2);
   strip(ctx, sx, y1, sw, sh); strip(ctx, sx, y2, sw, sh);
   const off = [];
   LINES.forEach((L) => {
@@ -1086,7 +1116,7 @@ function draw3() {
   ctx.font = font(fs * 0.8, 500); ctx.fillStyle = pal.muted; ctx.textAlign = 'center';
   for (let wl = 400; wl <= 750; wl += 50) ctx.fillText(wl, nmX(wl), y2 + sh + 32);
   ctx.textAlign = 'right'; ctx.fillText('nm', w - 4, y2 + sh + 32);
-  if (off.length) { ctx.textAlign = 'left'; ctx.fillStyle = pal.amber; ctx.font = font(fs * 0.85, 600); ctx.fillText('Görünür bölgenin dışına çıkan: ' + off.join(' · '), sx, h - 8); }
+  if (off.length) { ctx.textAlign = 'left'; ctx.fillStyle = pal.amber; ctx.font = font(fs * 0.85, 600); ctx.fillText('Shifted out of the visible range: ' + off.join(' · '), sx, h - 8); }
 }
 function readouts3() {
   const D = dopp(), beta = p3.v / C_LIGHT, z = D - 1, wlObs = p3.line * D, kl = p3.line * (1 + beta);
@@ -1095,14 +1125,14 @@ function readouts3() {
   $('#r3-l').innerHTML = `${fmt(wlObs, 2)} <small>nm</small>`;
   $('#r3-d').textContent = `${p3.name}: ${fmt(p3.line, 1)} → Δλ = ${sgn(wlObs - p3.line)}${fmt(Math.abs(wlObs - p3.line), 2)} nm`;
   $('#r3-k').innerHTML = `${fmt(kl, 2)} <small>nm</small>`;
-  $('#r3-kd').textContent = `fark ${fmt(Math.abs(wlObs - kl), 2)} nm`;
+  $('#r3-kd').textContent = `difference ${fmt(Math.abs(wlObs - kl), 2)} nm`;
   const c = wl2rgb(wlObs);
-  $('#r3-c').innerHTML = c ? `<span style="display:inline-block;width:26px;height:26px;border-radius:6px;vertical-align:-5px;margin-right:8px;background:rgb(${c});border:1px solid var(--line)"></span>${wlObs < 450 ? 'mor' : wlObs < 495 ? 'mavi' : wlObs < 570 ? 'yeşil' : wlObs < 590 ? 'sarı' : wlObs < 620 ? 'turuncu' : 'kırmızı'}` : '<small>görünmez</small>';
-  $('#r3-cd').textContent = wlObs > 750 ? 'kızılötesine kaydı' : wlObs < 380 ? 'morötesine kaydı' : `durgun renk ${fmt(p3.line, 1)} nm`;
+  $('#r3-c').innerHTML = c ? `<span style="display:inline-block;width:26px;height:26px;border-radius:6px;vertical-align:-5px;margin-right:8px;background:rgb(${c});border:1px solid var(--line)"></span>${wlObs < 450 ? 'violet' : wlObs < 495 ? 'blue' : wlObs < 570 ? 'green' : wlObs < 590 ? 'yellow' : wlObs < 620 ? 'orange' : 'red'}` : '<small>invisible</small>';
+  $('#r3-cd').textContent = wlObs > 750 ? 'shifted into infrared' : wlObs < 380 ? 'shifted into ultraviolet' : `rest color ${fmt(p3.line, 1)} nm`;
   $('#eq3').textContent = `β = v/c = ${fmt(p3.v, 0)} / ${fmt(C_LIGHT, 0)} = ${fmt(beta, 4)}\nλ′ = λ₀·√((1 + β)/(1 − β)) = ${fmt(p3.line, 1)} · ${fmt(D, 4)} = ${fmt(wlObs, 2)} nm\nf′/f₀ = 1/${fmt(D, 4)} = ${fmt(1 / D, 4)}`;
 }
 slider('v3', (v) => `${v > 0 ? '+' : ''}${fmt(v, 0)} km/s · ${fmt(v / C_LIGHT, 3)} c`, (v) => { p3.v = v; });
-$('#play3').addEventListener('click', () => { p3.playing = !p3.playing; $('#play3').textContent = p3.playing ? 'Duraklat' : 'Devam et'; });
+$('#play3').addEventListener('click', () => { p3.playing = !p3.playing; $('#play3').textContent = p3.playing ? 'Pause' : 'Resume'; });
 $('#lines3').addEventListener('click', (e) => {
   const b = e.target.closest('.chip'); if (!b) return;
   p3.line = +b.dataset.line; p3.name = b.dataset.name;
@@ -1114,13 +1144,14 @@ $('#presets3').addEventListener('click', (e) => {
 });
 
 /* ============================================================
-   sekmeler ve ana döngü
+   tabs and main loop
    ============================================================ */
 function showTab(id) {
   active = id;
   document.querySelectorAll('.tabs button').forEach((b) => b.setAttribute('aria-selected', b.dataset.tab === id));
   document.querySelectorAll('.tab').forEach((t) => { t.hidden = t.id !== id; });
   if (audio.ctx) setTone(440, 0);
+  if (id === 't1' && !sim.custom && sim.layout) { sim.layout.o[2].y = 0.3 * worldH(); sim.obs[2].y = sim.layout.o[2].y; }
   try { history.replaceState(null, '', '#' + id); } catch (e) { /* önizleme */ }
 }
 document.querySelector('.tabs').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) showTab(b.dataset.tab); });
@@ -1136,7 +1167,7 @@ document.addEventListener('keydown', (e) => {
   else if (e.key.toLowerCase() === 'r') { if (active === 't1') reset1(); else if (active === 't2') p2.t = 0; }
 });
 const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-if (reduce) { sim.playing = false; p2.playing = false; p3.playing = false; ['#play1', '#play2', '#play3'].forEach((s) => { $(s).textContent = 'Devam et'; }); }
+if (reduce) { sim.playing = false; p2.playing = false; p3.playing = false; ['#play1', '#play2', '#play3'].forEach((s) => { $(s).textContent = 'Resume'; }); }
 
 let last = performance.now(), frame = 0;
 function loop(now) {
